@@ -1,59 +1,76 @@
-# Non-Human Intelligence Reader
+# NHI Reader (Non-Human Intelligence Reader)
 
-React + Vite EPUB reader with Gemini-powered analysis, quiz generation, and lesson planning.
+NHI Reader is a macOS-first EPUB reading and cognition app. It combines reading, AI analysis, quiz generation, lesson planning, and research ledgering in one local workflow.
 
-## Local development
+## Product Summary
 
-### Option 1: Gemini API key
+- EPUB reader with TOC navigation, search, chapter rendering, and reader controls
+- AI analysis with persona lens + explanation depth controls
+- Research ledger for saved analysis/notes/quiz outputs
+- Quiz generation (`whole-book` and `ledger-weighted`)
+- Lesson plan generation from ledger context
+- Multi-provider AI support with OpenAI + Gemini switching in app settings
 
-1. Set `GEMINI_API_KEY` in `.env.local`.
-2. Run `npm install`.
-3. Run `npm run dev`.
+## Research Ledger Source Text Modes
 
-This starts:
-- Vite on `http://localhost:3000`
-- The local API server on `http://localhost:8080`
+Ledger now supports per-book source text display/export modes to keep entries and `.txt` exports manageable:
 
-Vite proxies `/api/*` requests to the local server, so the Gemini key stays server-side.
+- `Whole source text`
+- `No source text`
+- `Partial source text` (first 7 words + last 7 words)
 
-### Option 2: Vertex AI
+These modes are non-destructive (stored ledger data is unchanged) and are remembered per book.
 
-For local development against Google Cloud instead of an API key:
+## Runtime and Architecture
 
-1. Run `gcloud auth application-default login`
-2. Export:
-   - `GOOGLE_GENAI_USE_VERTEXAI=true`
-   - `GOOGLE_CLOUD_PROJECT=<your-project-id>`
-   - `GOOGLE_CLOUD_LOCATION=global`
-3. Run `npm run dev`
+- Frontend: React + Vite
+- Native shell: Tauri v2 (macOS-first)
+- Secret/key storage: Tauri Stronghold
+- Non-secret settings: Tauri Store
+- AI integration: normalized provider layer (`OpenAI` Responses API + Gemini `generateContent`)
 
-## Production
-
-The app is set up for Cloud Run source deployments.
-
-### Deployed service
-
-- URL: [https://nhi-epub-reader-adfhlspmoq-as.a.run.app](https://nhi-epub-reader-adfhlspmoq-as.a.run.app)
-- Region: `asia-southeast1`
-- Cloud Run service: `nhi-epub-reader`
-- Runtime service account: `nhi-epub-reader-run@gen-lang-client-0821037571.iam.gserviceaccount.com`
-
-### Deploy again
+## Local Development
 
 ```bash
-gcloud run deploy nhi-epub-reader \
-  --source . \
-  --project gen-lang-client-0821037571 \
-  --region asia-southeast1 \
-  --allow-unauthenticated \
-  --service-account nhi-epub-reader-run@gen-lang-client-0821037571.iam.gserviceaccount.com \
-  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=gen-lang-client-0821037571,GOOGLE_CLOUD_LOCATION=global
+npm install
+npm run dev
 ```
 
-### Required Google Cloud APIs
+## Run as Native macOS App (Dev)
 
-- `run.googleapis.com`
-- `cloudbuild.googleapis.com`
-- `artifactregistry.googleapis.com`
-- `aiplatform.googleapis.com`
-- `iam.googleapis.com`
+```bash
+npm run tauri:dev
+```
+
+## Build and Package macOS Installer
+
+Canonical installer build command:
+
+```bash
+npm run tauri:build:installer
+```
+
+Output installer:
+
+- `src-tauri/target/release/bundle/dmg/NHI-ePub-Reader.dmg`
+
+Install flow:
+
+1. Open/mount `NHI-ePub-Reader.dmg`
+2. Drag `NHI Reader.app` into `/Applications`
+3. Launch from Applications
+
+Note: current build is unsigned for local/internal use.
+
+## GitHub
+
+- Repository: [alanism/NHI-epub-reader-MacOS](https://github.com/alanism/NHI-epub-reader-MacOS)
+- Latest release: [v0.1.0](https://github.com/alanism/NHI-epub-reader-MacOS/releases/tag/v0.1.0)
+
+## Scripts
+
+- `npm run dev` - Vite web development server
+- `npm run build` - production web build
+- `npm run tauri:dev` - run Tauri desktop app in development
+- `npm run tauri:build` - standard Tauri production build
+- `npm run tauri:build:installer` - canonical DMG builder (`NHI-ePub-Reader.dmg`)
