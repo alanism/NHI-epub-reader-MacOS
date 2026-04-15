@@ -30,20 +30,31 @@ const TOKEN_BUDGETS: Record<TokenBudgetClass, number> = {
 };
 
 const QUIZ_SCHEMA = {
-  type: 'array',
-  items: {
-    type: 'object',
-    properties: {
-      id: { type: 'string' },
-      prompt: { type: 'string' },
-      choices: { type: 'array', items: { type: 'string' } },
-      correctIndex: { type: 'integer' },
-      explanation: { type: 'string' },
-      sourceType: { type: 'string', enum: ['whole-book', 'ledger'] },
+  type: 'object',
+  properties: {
+    questions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          prompt: { type: 'string' },
+          choices: { type: 'array', items: { type: 'string' } },
+          correctIndex: { type: 'integer' },
+          explanation: { type: 'string' },
+          sourceType: { type: 'string', enum: ['whole-book', 'ledger'] },
+        },
+        required: ['id', 'prompt', 'choices', 'correctIndex', 'explanation', 'sourceType'],
+        additionalProperties: false,
+      },
     },
-    required: ['id', 'prompt', 'choices', 'correctIndex', 'explanation', 'sourceType'],
-    additionalProperties: false,
   },
+  required: ['questions'],
+  additionalProperties: false,
+};
+
+type QuizEnvelope = {
+  questions: QuizQuestion[];
 };
 
 class OpenAIClient implements AIProviderClient {
@@ -332,6 +343,10 @@ INSTRUCTIONS:
 4. Questions should verify understanding of concepts, ability to distinguish similar ideas, or application of ideas to scenarios.
 5. Provide 4 choices per question.
 6. Return valid JSON only.
+7. Output must be an object in this shape:
+{
+  "questions": [ ... ]
+}
 `;
 
     const sections = [
@@ -344,7 +359,7 @@ INSTRUCTIONS:
 
     sections.push('Generate the quiz now.');
 
-    const response = await generateJsonRequest<QuizQuestion[]>({
+    const response = await generateJsonRequest<QuizEnvelope>({
       taskType: 'quiz',
       inputText: sections.join('\n\n'),
       systemInstruction,
@@ -353,7 +368,7 @@ INSTRUCTIONS:
       tokenBudgetClass: 'large',
     });
 
-    return response.data ?? [];
+    return response.data?.questions ?? [];
   },
 
   async generateLessonPlan(
